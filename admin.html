@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Mac Free Apps</title>
+    <link rel="stylesheet" href="admin-styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-container">
+            <div class="login-card">
+                <h1><i class="fas fa-lock"></i> Admin Panel</h1>
+                <p>Mac Free Apps Yönetim Paneli</p>
+                <form id="loginForm">
+                    <div class="input-group">
+                        <i class="fas fa-key"></i>
+                        <input type="password" id="adminPassword" placeholder="Admin Şifresi" required>
+                    </div>
+                    <button type="submit" class="login-btn">
+                        <i class="fas fa-sign-in-alt"></i> Giriş Yap
+                    </button>
+                </form>
+                <div id="loginError" class="error-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel" class="admin-panel" style="display: none;">
+        <!-- Header -->
+        <header class="admin-header">
+            <div class="admin-nav">
+                <h1><i class="fas fa-cog"></i> Admin Panel</h1>
+                <div class="admin-actions">
+                    <button id="addAppBtn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Yeni Uygulama
+                    </button>
+                    <button id="logoutBtn" class="btn btn-secondary">
+                        <i class="fas fa-sign-out-alt"></i> Çıkış
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <div class="admin-container">
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalApps">0</h3>
+                            <p>Toplam Uygulama</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalViews">0</h3>
+                            <p>Toplam Görüntülenme</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Apps Management -->
+                <div class="apps-management">
+                    <h2><i class="fas fa-list"></i> Uygulama Yönetimi</h2>
+                    <div id="appsList" class="apps-list">
+                        <!-- Apps will be loaded here dynamically -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit App Modal -->
+    <div id="appModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Yeni Uygulama Ekle</h2>
+                <button id="closeModal" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="appForm" class="app-form">
+                <div class="form-group">
+                    <label for="appName">Uygulama Adı *</label>
+                    <input type="text" id="appName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="appDescription">Açıklama *</label>
+                    <textarea id="appDescription" rows="3" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="appIcon">İkon (Emoji) *</label>
+                    <input type="text" id="appIcon" placeholder="📱" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="appDownloadUrl">İndirme Linki</label>
+                    <input type="url" id="appDownloadUrl" placeholder="https://example.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="appCategory">Kategori</label>
+                    <select id="appCategory">
+                        <option value="productivity">Verimlilik</option>
+                        <option value="design">Tasarım</option>
+                        <option value="development">Geliştirme</option>
+                        <option value="entertainment">Eğlence</option>
+                        <option value="utilities">Araçlar</option>
+                        <option value="security">Güvenlik</option>
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" id="cancelBtn" class="btn btn-secondary">İptal</button>
+                    <button type="submit" id="saveBtn" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content small">
+            <div class="modal-header">
+                <h2><i class="fas fa-exclamation-triangle"></i> Uygulamayı Sil</h2>
+                <button id="closeDeleteModal" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Bu uygulamayı silmek istediğinizden emin misiniz?</p>
+                <p><strong id="deleteAppName"></strong></p>
+            </div>
+            <div class="form-actions">
+                <button id="cancelDeleteBtn" class="btn btn-secondary">İptal</button>
+                <button id="confirmDeleteBtn" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Sil
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin-script.js"></script>
+</body>
+</html>
