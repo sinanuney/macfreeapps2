@@ -87,64 +87,162 @@ class AppStoreScraper {
             lastUpdated: this.extractLastUpdated(doc)
         };
 
+        // Debug information
+        console.log('Extracted app data:', appData);
+        
+        // Validate that we got at least basic information
+        if (!appData.name) {
+            console.warn('No app name found, checking HTML structure...');
+            console.log('Available h1 elements:', doc.querySelectorAll('h1').length);
+            console.log('Available product-header elements:', doc.querySelectorAll('.product-header').length);
+        }
+
         return appData;
     }
 
     extractAppName(doc) {
-        const nameElement = doc.querySelector('h1[data-testid="product-title"]') || 
-                           doc.querySelector('.product-header__title') ||
-                           doc.querySelector('h1');
-        return nameElement ? nameElement.textContent.trim() : '';
+        const nameSelectors = [
+            'h1[data-testid="product-title"]',
+            '.product-header__title',
+            'h1.product-header__title',
+            '.product-header h1',
+            'h1'
+        ];
+
+        for (const selector of nameSelectors) {
+            const nameElement = doc.querySelector(selector);
+            if (nameElement) {
+                const name = nameElement.textContent.trim();
+                if (name && name.length > 0) {
+                    return name;
+                }
+            }
+        }
+        return '';
     }
 
     extractDescription(doc) {
-        const descElement = doc.querySelector('[data-testid="product-description"]') ||
-                           doc.querySelector('.product-description') ||
-                           doc.querySelector('.what-is-new__content');
-        return descElement ? descElement.textContent.trim().substring(0, 200) + '...' : '';
+        const descSelectors = [
+            '[data-testid="product-description"]',
+            '.product-description',
+            '.what-is-new__content',
+            '.product-header__description',
+            '.l-column.small-12.medium-12.large-12 p',
+            '.product-description p'
+        ];
+
+        for (const selector of descSelectors) {
+            const descElement = doc.querySelector(selector);
+            if (descElement) {
+                const description = descElement.textContent.trim();
+                if (description && description.length > 10) {
+                    return description.substring(0, 200) + '...';
+                }
+            }
+        }
+        return '';
     }
 
     extractIcon(doc) {
-        const iconElement = doc.querySelector('.product-header__icon img') ||
-                           doc.querySelector('.artwork img') ||
-                           doc.querySelector('[data-testid="product-icon"] img');
-        return iconElement ? iconElement.src : '';
+        const iconSelectors = [
+            '.product-header__icon img',
+            '.artwork img',
+            '[data-testid="product-icon"] img',
+            '.product-header img',
+            '.we-artwork--app-icon img'
+        ];
+
+        for (const selector of iconSelectors) {
+            const iconElement = doc.querySelector(selector);
+            if (iconElement && iconElement.src && !iconElement.src.includes('screenshot')) {
+                return iconElement.src;
+            }
+        }
+        return '';
     }
 
     extractVersion(doc) {
-        const versionElement = doc.querySelector('[data-testid="version-info"]') ||
-                              doc.querySelector('.version');
-        if (versionElement) {
-            const versionText = versionElement.textContent;
-            const versionMatch = versionText.match(/Sürüm\s+([\d.]+)/i) || 
-                                versionText.match(/Version\s+([\d.]+)/i);
-            return versionMatch ? versionMatch[1] : '';
+        // Try multiple selectors for version
+        const versionSelectors = [
+            '.whats-new__latest__version',
+            '[data-testid="version-info"]',
+            '.version',
+            '.l-column.small-6.medium-12.whats-new__latest__version'
+        ];
+
+        for (const selector of versionSelectors) {
+            const versionElement = doc.querySelector(selector);
+            if (versionElement) {
+                const versionText = versionElement.textContent.trim();
+                // Extract version number from text like "Version 1.116.0"
+                const versionMatch = versionText.match(/Version\s+([\d.]+)/i) || 
+                                    versionText.match(/Sürüm\s+([\d.]+)/i) ||
+                                    versionText.match(/([\d.]+)/);
+                if (versionMatch) {
+                    return versionMatch[1];
+                }
+            }
         }
         return '';
     }
 
     extractSize(doc) {
-        const sizeElement = doc.querySelector('[data-testid="file-size"]') ||
-                           doc.querySelector('.file-size');
-        if (sizeElement) {
-            const sizeText = sizeElement.textContent;
-            const sizeMatch = sizeText.match(/([\d.]+)\s*(MB|GB|KB)/i);
-            return sizeMatch ? sizeMatch[0] : '';
+        const sizeSelectors = [
+            '[data-testid="file-size"]',
+            '.file-size',
+            '.l-column.small-6.medium-12 .information-list__item__definition',
+            '.information-list__item__definition'
+        ];
+
+        for (const selector of sizeSelectors) {
+            const sizeElement = doc.querySelector(selector);
+            if (sizeElement) {
+                const sizeText = sizeElement.textContent;
+                const sizeMatch = sizeText.match(/([\d.]+)\s*(MB|GB|KB)/i);
+                if (sizeMatch) {
+                    return sizeMatch[0];
+                }
+            }
         }
         return '';
     }
 
     extractScreenshots(doc) {
         const screenshots = [];
-        const screenshotElements = doc.querySelectorAll('.screenshot img, .artwork img');
         
-        screenshotElements.forEach(img => {
-            if (img.src && !img.src.includes('icon') && !img.src.includes('logo')) {
-                screenshots.push(img.src);
-            }
-        });
+        // Try multiple selectors for screenshots
+        const screenshotSelectors = [
+            '.we-artwork--screenshot-platform-mac picture source[srcset]',
+            '.screenshot img',
+            '.artwork img',
+            '.l-column.small-4.medium-4.large-4 picture source[srcset]',
+            'picture.we-artwork--screenshot-platform-mac source[srcset]'
+        ];
 
-        return screenshots.slice(0, 5); // Max 5 screenshots
+        for (const selector of screenshotSelectors) {
+            const elements = doc.querySelectorAll(selector);
+            
+            elements.forEach(element => {
+                if (element.tagName === 'SOURCE' && element.srcset) {
+                    // Extract the highest resolution image from srcset
+                    const srcset = element.srcset;
+                    const urls = srcset.split(',').map(src => src.trim().split(' ')[0]);
+                    // Get the highest resolution (usually the last one)
+                    const highestRes = urls[urls.length - 1];
+                    if (highestRes && !highestRes.includes('icon') && !highestRes.includes('logo')) {
+                        screenshots.push(highestRes);
+                    }
+                } else if (element.tagName === 'IMG' && element.src) {
+                    if (!element.src.includes('icon') && !element.src.includes('logo') && !element.src.includes('gif')) {
+                        screenshots.push(element.src);
+                    }
+                }
+            });
+        }
+
+        // Remove duplicates and limit to 5
+        const uniqueScreenshots = [...new Set(screenshots)];
+        return uniqueScreenshots.slice(0, 5);
     }
 
     extractRequirements(doc) {
@@ -162,9 +260,24 @@ class AppStoreScraper {
     }
 
     extractDeveloper(doc) {
-        const devElement = doc.querySelector('[data-testid="developer-name"]') ||
-                          doc.querySelector('.product-header__identity .product-header__identity__name');
-        return devElement ? devElement.textContent.trim() : '';
+        const devSelectors = [
+            '[data-testid="developer-name"]',
+            '.product-header__identity .product-header__identity__name',
+            '.product-header__identity__name',
+            '.l-column.small-6.medium-12 .information-list__item__definition a',
+            '.information-list__item__definition a'
+        ];
+
+        for (const selector of devSelectors) {
+            const devElement = doc.querySelector(selector);
+            if (devElement) {
+                const developer = devElement.textContent.trim();
+                if (developer && developer.length > 0) {
+                    return developer;
+                }
+            }
+        }
+        return '';
     }
 
     extractCategory(doc) {
