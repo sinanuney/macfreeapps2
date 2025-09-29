@@ -3,6 +3,7 @@ class AdminPanel {
     constructor() {
         this.adminPassword = 'admin123'; // Güvenlik için değiştirin!
         this.currentEditingId = null;
+        this.scraper = new AppStoreScraper();
         this.init();
     }
 
@@ -55,6 +56,11 @@ class AdminPanel {
         // Delete confirmation
         document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
             this.confirmDelete();
+        });
+
+        // App Store scraper
+        document.getElementById('scrapeBtn').addEventListener('click', () => {
+            this.scrapeAppStore();
         });
 
         // Close modals on outside click
@@ -284,6 +290,69 @@ class AdminPanel {
         // For now, we'll just log it - in a real implementation, you might want to
         // trigger a refresh or send a message to the main page
         console.log('Apps updated, main page should be refreshed');
+    }
+
+    async scrapeAppStore() {
+        const url = document.getElementById('appStoreUrl').value.trim();
+        const errorDiv = document.getElementById('scraperError');
+
+        if (!url) {
+            this.showScraperError('Lütfen App Store URL\'si girin');
+            return;
+        }
+
+        try {
+            const appData = await this.scraper.scrapeAppStore(url);
+            this.populateFormWithScrapedData(appData);
+            this.hideScraperError();
+        } catch (error) {
+            this.showScraperError(error.message);
+        }
+    }
+
+    populateFormWithScrapedData(data) {
+        // Fill form fields with scraped data
+        document.getElementById('appName').value = data.name || '';
+        document.getElementById('appDescription').value = data.description || '';
+        document.getElementById('appIcon').value = this.scraper.getAppEmoji(data.name, data.category);
+        document.getElementById('appDownloadUrl').value = data.downloadUrl || '';
+        document.getElementById('appCategory').value = data.category || 'utilities';
+        
+        // Additional fields
+        document.getElementById('appVersion').value = data.version || '';
+        document.getElementById('appSize').value = data.size || '';
+        document.getElementById('appDeveloper').value = data.developer || '';
+        document.getElementById('appRating').value = data.rating || '';
+        document.getElementById('appPrice').value = data.price || 'Ücretsiz';
+        document.getElementById('appScreenshots').value = data.screenshots ? data.screenshots.join(', ') : '';
+        document.getElementById('appRequirements').value = data.requirements ? data.requirements.join('\n') : '';
+
+        // Show success message
+        this.showScraperSuccess('App Store verileri başarıyla çekildi!');
+    }
+
+    showScraperError(message) {
+        const errorDiv = document.getElementById('scraperError');
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        errorDiv.style.color = '#e53e3e';
+    }
+
+    hideScraperError() {
+        const errorDiv = document.getElementById('scraperError');
+        errorDiv.style.display = 'none';
+    }
+
+    showScraperSuccess(message) {
+        const errorDiv = document.getElementById('scraperError');
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        errorDiv.style.color = '#38a169';
+        
+        // Hide success message after 3 seconds
+        setTimeout(() => {
+            errorDiv.style.display = 'none';
+        }, 3000);
     }
 }
 

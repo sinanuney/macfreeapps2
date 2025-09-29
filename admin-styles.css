@@ -406,6 +406,87 @@ body {
     padding: 30px;
 }
 
+/* Scraper Section */
+.scraper-section {
+    background: #f8fafc;
+    border: 2px dashed #cbd5e0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.scraper-section h3 {
+    color: #4a5568;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.scraper-input-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.scraper-input-group input {
+    flex: 1;
+    padding: 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.scraper-input-group input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.scraper-input-group .btn {
+    white-space: nowrap;
+    padding: 12px 20px;
+}
+
+.loading-indicator {
+    color: #667eea;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.loading-indicator i {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Form Row for side-by-side inputs */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+    
+    .scraper-input-group {
+        flex-direction: column;
+    }
+    
+    .scraper-input-group .btn {
+        width: 100%;
+    }
+}
+
 .form-group {
     margin-bottom: 20px;
 }

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Store Scraper Test - Mac Free Apps</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        h1 {
+            color: #2d3748;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .input-group input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .btn {
+            padding: 12px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .result {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin-top: 20px;
+        }
+        .loading {
+            color: #667eea;
+            display: none;
+        }
+        .error {
+            color: #e53e3e;
+            background: #fed7d7;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .success {
+            color: #38a169;
+            background: #c6f6d5;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .app-data {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .data-item {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 6px;
+        }
+        .data-item strong {
+            color: #4a5568;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .screenshots {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .screenshot {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+    </style>
+    <script src="appstore-scraper.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-magic"></i> App Store Scraper Test</h1>
+        
+        <div class="test-section">
+            <h3>Test URL'leri</h3>
+            <p>Bu URL'leri test edebilirsiniz:</p>
+            <ul>
+                <li><strong>DaVinci Resolve Studio:</strong> https://apps.apple.com/tr/app/davinci-resolve-studio/id900392332?l=tr&mt=12</li>
+                <li><strong>Notion:</strong> https://apps.apple.com/tr/app/notion/id1232780281</li>
+                <li><strong>Spotify:</strong> https://apps.apple.com/tr/app/spotify/id324684580</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h3>App Store URL Test</h3>
+            <div class="input-group">
+                <input type="url" id="testUrl" placeholder="https://apps.apple.com/tr/app/uygulama-adi/id123456789" 
+                       value="https://apps.apple.com/tr/app/davinci-resolve-studio/id900392332?l=tr&mt=12">
+                <button class="btn" onclick="testScraper()">
+                    <i class="fas fa-download"></i> Test Et
+                </button>
+            </div>
+            
+            <div id="loading" class="loading">
+                <i class="fas fa-spinner fa-spin"></i> App Store verileri çekiliyor...
+            </div>
+            
+            <div id="error" class="error" style="display: none;"></div>
+            <div id="success" class="success" style="display: none;"></div>
+            
+            <div id="result" class="result" style="display: none;">
+                <h3>Çekilen Veriler:</h3>
+                <div id="appData" class="app-data"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const scraper = new AppStoreScraper();
+
+        async function testScraper() {
+            const url = document.getElementById('testUrl').value.trim();
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const success = document.getElementById('success');
+            const result = document.getElementById('result');
+            const appData = document.getElementById('appData');
+
+            // Reset UI
+            error.style.display = 'none';
+            success.style.display = 'none';
+            result.style.display = 'none';
+            loading.style.display = 'block';
+
+            try {
+                const data = await scraper.scrapeAppStore(url);
+                
+                // Display the data
+                appData.innerHTML = `
+                    <div class="data-item">
+                        <strong>Uygulama Adı:</strong>
+                        ${data.name || 'Bulunamadı'}
+                    </div>
+                    <div class="data-item">
+                        <strong>Açıklama:</strong>
+                        ${data.description || 'Bulunamadı'}
+                    </div>
+                    <div class="data-item">
+                        <strong>Geliştirici:</strong>
+                        ${data.developer || 'Bulunamadı'}
+                    </div>
+                    <div class="data-item">
+                        <strong>Sürüm:</strong>
+                        ${data.version || 'Bulunamadı'}
+                    </div>
+                    <div class="data-item">
+                        <strong>Boyut:</strong>
+                        ${data.size || 'Bulunamadı'}
+                    </div>
+                    <div class="data-item">
+                        <strong>Fiyat:</strong>
+                        ${data.price || 'Bulunamadı'}
+                    </div>
+                    <div class="data-item">
+                        <strong>Değerlendirme:</strong>
+                        ${data.rating ? data.rating + '/5' : 'Bulunamadı'}
+                    </div>
+                    <div class="data-item">
+                        <strong>Kategori:</strong>
+                        ${data.category || 'Bulunamadı'}
+                    </div>
+                    <div class="data-item">
+                        <strong>Son Güncelleme:</strong>
+                        ${data.lastUpdated || 'Bulunamadı'}
+                    </div>
+                    <div class="data-item">
+                        <strong>Sistem Gereksinimleri:</strong>
+                        ${data.requirements ? data.requirements.join(', ') : 'Bulunamadı'}
+                    </div>
+                    <div class="data-item" style="grid-column: 1 / -1;">
+                        <strong>Ekran Görüntüleri:</strong>
+                        <div class="screenshots">
+                            ${data.screenshots ? data.screenshots.map(img => 
+                                `<img src="${img}" class="screenshot" alt="Screenshot">`
+                            ).join('') : 'Bulunamadı'}
+                        </div>
+                    </div>
+                `;
+
+                loading.style.display = 'none';
+                success.style.display = 'block';
+                success.textContent = 'Veriler başarıyla çekildi!';
+                result.style.display = 'block';
+
+            } catch (err) {
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                error.textContent = 'Hata: ' + err.message;
+            }
+        }
+
+        // Test with DaVinci Resolve on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                testScraper();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
