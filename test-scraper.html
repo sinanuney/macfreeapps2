@@ -106,6 +106,7 @@
             border-radius: 4px;
         }
     </style>
+    <script src="appstore-api.js"></script>
     <script src="appstore-scraper.js"></script>
 </head>
 <body>
@@ -126,9 +127,12 @@
             <h3>App Store URL Test</h3>
             <div class="input-group">
                 <input type="url" id="testUrl" placeholder="https://apps.apple.com/tr/app/uygulama-adi/id123456789" 
-                       value="https://apps.apple.com/tr/app/davinci-resolve-studio/id900392332?l=tr&mt=12">
+                       value="https://apps.apple.com/tr/app/canva-foto-video-d%C3%BCzenleyici/id897446215?l=tr">
+                <button class="btn" onclick="testAPI()">
+                    <i class="fas fa-download"></i> iTunes API Test
+                </button>
                 <button class="btn" onclick="testScraper()">
-                    <i class="fas fa-download"></i> Test Et
+                    <i class="fas fa-download"></i> Web Scraper Test
                 </button>
             </div>
             
@@ -148,6 +152,31 @@
 
     <script>
         const scraper = new AppStoreScraper();
+        const api = new AppStoreAPI();
+
+        async function testAPI() {
+            const url = document.getElementById('testUrl').value.trim();
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const success = document.getElementById('success');
+            const result = document.getElementById('result');
+            const appData = document.getElementById('appData');
+
+            // Reset UI
+            error.style.display = 'none';
+            success.style.display = 'none';
+            result.style.display = 'none';
+            loading.style.display = 'block';
+
+            try {
+                const data = await api.getAppData(url);
+                displayData(data, appData, loading, success, result);
+            } catch (err) {
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                error.textContent = 'iTunes API Hatası: ' + err.message;
+            }
+        }
 
         async function testScraper() {
             const url = document.getElementById('testUrl').value.trim();
@@ -165,9 +194,17 @@
 
             try {
                 const data = await scraper.scrapeAppStore(url);
-                
-                // Display the data
-                appData.innerHTML = `
+                displayData(data, appData, loading, success, result);
+            } catch (err) {
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                error.textContent = 'Web Scraper Hatası: ' + err.message;
+            }
+        }
+
+        function displayData(data, appData, loading, success, result) {
+            // Display the data
+            appData.innerHTML = `
                     <div class="data-item">
                         <strong>Uygulama Adı:</strong>
                         ${data.name || 'Bulunamadı'}
@@ -218,22 +255,16 @@
                     </div>
                 `;
 
-                loading.style.display = 'none';
-                success.style.display = 'block';
-                success.textContent = 'Veriler başarıyla çekildi!';
-                result.style.display = 'block';
-
-            } catch (err) {
-                loading.style.display = 'none';
-                error.style.display = 'block';
-                error.textContent = 'Hata: ' + err.message;
-            }
+            loading.style.display = 'none';
+            success.style.display = 'block';
+            success.textContent = 'Veriler başarıyla çekildi!';
+            result.style.display = 'block';
         }
 
-        // Test with DaVinci Resolve on page load
+        // Test with Canva on page load
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
-                testScraper();
+                testAPI();
             }, 1000);
         });
     </script>

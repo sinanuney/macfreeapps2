@@ -1,7 +1,14 @@
 // App Store Scraper for Mac Free Apps
 class AppStoreScraper {
     constructor() {
-        this.corsProxy = 'https://api.allorigins.win/raw?url=';
+        // Multiple CORS proxies for better reliability
+        this.corsProxies = [
+            'https://cors-anywhere.herokuapp.com/',
+            'https://api.allorigins.win/raw?url=',
+            'https://corsproxy.io/?',
+            'https://thingproxy.freeboard.io/fetch/'
+        ];
+        this.currentProxyIndex = 0;
     }
 
     async scrapeAppStore(url) {
@@ -14,17 +21,38 @@ class AppStoreScraper {
             // Show loading state
             this.showLoading(true);
 
-            // Fetch the page content
-            const response = await fetch(this.corsProxy + encodeURIComponent(url));
-            if (!response.ok) {
-                throw new Error('Sayfa yüklenemedi');
+            // Try multiple proxies
+            let lastError = null;
+            for (let i = 0; i < this.corsProxies.length; i++) {
+                try {
+                    const proxyUrl = this.corsProxies[i] + encodeURIComponent(url);
+                    const response = await fetch(proxyUrl, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+
+                    const html = await response.text();
+                    const appData = this.parseAppData(html, url);
+
+                    this.showLoading(false);
+                    return appData;
+
+                } catch (error) {
+                    lastError = error;
+                    console.log(`Proxy ${i + 1} failed:`, error.message);
+                    continue;
+                }
             }
 
-            const html = await response.text();
-            const appData = this.parseAppData(html, url);
-
-            this.showLoading(false);
-            return appData;
+            // If all proxies failed, try a different approach
+            throw new Error('Tüm CORS proxy\'leri başarısız oldu. Lütfen daha sonra tekrar deneyin.');
 
         } catch (error) {
             this.showLoading(false);

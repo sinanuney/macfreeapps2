@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="admin-styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="appstore-api.js"></script>
     <script src="appstore-scraper.js"></script>
 </head>
 <body>
@@ -101,6 +102,14 @@
                         <button type="button" id="scrapeBtn" class="btn btn-primary">
                             <i class="fas fa-download"></i> Veri Çek
                         </button>
+                    </div>
+                    <div class="scraper-options">
+                        <label>
+                            <input type="radio" name="scraperMethod" value="api" checked> iTunes API (Hızlı)
+                        </label>
+                        <label>
+                            <input type="radio" name="scraperMethod" value="scraper"> Web Scraper (Detaylı)
+                        </label>
                     </div>
                     <div id="scraperLoading" class="loading-indicator" style="display: none;">
                         <i class="fas fa-spinner fa-spin"></i> App Store verileri çekiliyor...

@@ -4,6 +4,7 @@ class AdminPanel {
         this.adminPassword = 'admin123'; // Güvenlik için değiştirin!
         this.currentEditingId = null;
         this.scraper = new AppStoreScraper();
+        this.api = new AppStoreAPI();
         this.init();
     }
 
@@ -295,6 +296,7 @@ class AdminPanel {
     async scrapeAppStore() {
         const url = document.getElementById('appStoreUrl').value.trim();
         const errorDiv = document.getElementById('scraperError');
+        const method = document.querySelector('input[name="scraperMethod"]:checked').value;
 
         if (!url) {
             this.showScraperError('Lütfen App Store URL\'si girin');
@@ -302,7 +304,16 @@ class AdminPanel {
         }
 
         try {
-            const appData = await this.scraper.scrapeAppStore(url);
+            let appData;
+            
+            if (method === 'api') {
+                // Use iTunes API (faster, more reliable)
+                appData = await this.api.getAppData(url);
+            } else {
+                // Use web scraper (more detailed but slower)
+                appData = await this.scraper.scrapeAppStore(url);
+            }
+            
             this.populateFormWithScrapedData(appData);
             this.hideScraperError();
         } catch (error) {
@@ -314,7 +325,11 @@ class AdminPanel {
         // Fill form fields with scraped data
         document.getElementById('appName').value = data.name || '';
         document.getElementById('appDescription').value = data.description || '';
-        document.getElementById('appIcon').value = this.scraper.getAppEmoji(data.name, data.category);
+        
+        // Use appropriate emoji method based on data source
+        const emoji = data.icon || this.scraper.getAppEmoji(data.name, data.category) || this.api.getAppEmoji(data.name, data.category);
+        document.getElementById('appIcon').value = emoji;
+        
         document.getElementById('appDownloadUrl').value = data.downloadUrl || '';
         document.getElementById('appCategory').value = data.category || 'utilities';
         
