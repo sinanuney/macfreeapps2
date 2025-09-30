@@ -33,7 +33,16 @@ class DeepSeekAI {
 
             this.isValid = response.ok;
             if (!this.isValid) {
-                console.warn('DeepSeek API key validation failed:', response.status);
+                console.warn('DeepSeek API key validation failed:', response.status, response.statusText);
+                // Try to get error details
+                try {
+                    const errorData = await response.json();
+                    console.warn('API Error details:', errorData);
+                } catch (e) {
+                    console.warn('Could not parse error response');
+                }
+            } else {
+                console.log('✅ DeepSeek API key is valid!');
             }
         } catch (error) {
             console.warn('DeepSeek API key validation error:', error);
@@ -42,11 +51,7 @@ class DeepSeekAI {
     }
 
     async sendMessage(message, context = {}) {
-        // If API key is invalid, use fallback
-        if (!this.isValid) {
-            return this.fallbackResponse(message, context);
-        }
-
+        // Always try API first, then fallback if it fails
         try {
             const systemPrompt = this.createSystemPrompt(context);
             const userPrompt = this.createUserPrompt(message, context);
@@ -77,6 +82,7 @@ class DeepSeekAI {
 
             if (!response.ok) {
                 if (response.status === 401) {
+                    console.warn('DeepSeek API 401 error - using fallback');
                     this.isValid = false;
                     return this.fallbackResponse(message, context);
                 }
@@ -84,10 +90,12 @@ class DeepSeekAI {
             }
 
             const data = await response.json();
+            this.isValid = true; // Mark as valid if successful
             return data.choices[0].message.content;
 
         } catch (error) {
-            console.error('DeepSeek AI Error:', error);
+            console.warn('DeepSeek API error, using fallback:', error);
+            this.isValid = false;
             return this.fallbackResponse(message, context);
         }
     }
@@ -116,6 +124,22 @@ class DeepSeekAI {
             return `APP_LIST: all\n\n📱 Tüm uygulamaları listeliyorum!`;
         }
         
+        if (lowerMessage.includes('düzenle') || lowerMessage.includes('edit')) {
+            const appName = this.extractAppName(message);
+            if (appName) {
+                return `APP_EDIT: ${appName}\n\n✏️ "${appName}" uygulamasını düzenleme modunda açacağım!`;
+            }
+            return `Hangi uygulamayı düzenlemek istiyorsunuz? Örnek: "Canva uygulamasını düzenle"`;
+        }
+        
+        if (lowerMessage.includes('sil') || lowerMessage.includes('delete')) {
+            const appName = this.extractAppName(message);
+            if (appName) {
+                return `APP_DELETE: ${appName}\n\n⚠️ "${appName}" uygulamasını silmek istediğinizden emin misiniz?`;
+            }
+            return `Hangi uygulamayı silmek istiyorsunuz? Örnek: "Canva uygulamasını sil"`;
+        }
+        
         if (lowerMessage.includes('yardım') || lowerMessage.includes('help')) {
             return `🤖 **Mac Free Apps AI Asistanı Komutları:**
 
@@ -129,7 +153,7 @@ class DeepSeekAI {
 • "Tüm uygulamaları listele" - Tüm uygulamaları göster
 • "Tasarım uygulamalarını göster" - Kategoriye göre listele
 
-**💡 Not:** DeepSeek AI şu anda kullanılamıyor, basit kural tabanlı yanıtlar veriyorum.`;
+**💡 Not:** Şu anda basit kural tabanlı yanıtlar veriyorum. Daha akıllı yanıtlar için API key ayarlarını kontrol edin.`;
         }
         
         if (lowerMessage.includes('merhaba') || lowerMessage.includes('selam') || lowerMessage.includes('hello')) {

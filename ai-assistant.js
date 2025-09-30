@@ -64,11 +64,26 @@ class AIAssistant {
         
         if (this.isActive) {
             aiPanel.style.display = 'block';
+            aiPanel.classList.add('active');
             aiToggleBtn.innerHTML = '<i class="fas fa-robot"></i> AI Kapat';
             aiToggleBtn.classList.add('active');
-            this.addAIMessage('Merhaba! Ben Mac Free Apps AI asistanınızım. Size nasıl yardımcı olabilirim?');
+            this.aiInput.focus();
+            
+            // Add welcome message if chat is empty
+            if (this.conversationHistory.length === 0) {
+                this.addAIMessage(`👋 Merhaba! Ben Mac Free Apps AI asistanınızım. 
+
+Size şu konularda yardımcı olabilirim:
+• 📱 Uygulama ekleme ve düzenleme
+• 🔍 Uygulama arama ve listeleme  
+• 📊 Kategori bazlı filtreleme
+• ⚙️ Uygulama yönetimi
+
+Ne yapmak istiyorsunuz? Örnek: "Canva uygulamasını ekle"`);
+            }
         } else {
             aiPanel.style.display = 'none';
+            aiPanel.classList.remove('active');
             aiToggleBtn.innerHTML = '<i class="fas fa-robot"></i> AI Aç';
             aiToggleBtn.classList.remove('active');
         }
@@ -506,11 +521,6 @@ Nasıl yardımcı olabilirim?`;
     addAIMessage(message) {
         this.addMessage(message, 'ai');
         this.conversationHistory.push({ type: 'ai', message, timestamp: new Date() });
-        
-        // Check if DeepSeek AI is available
-        if (this.deepSeekAI && !this.deepSeekAI.isValid) {
-            this.addMessage('⚠️ DeepSeek AI şu anda kullanılamıyor. Basit kural tabanlı yanıtlar veriyorum.', 'ai');
-        }
     }
 
     addMessage(message, type) {

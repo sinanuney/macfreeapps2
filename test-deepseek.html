@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepSeek AI Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+        }
+        .test-section h3 {
+            color: #667eea;
+            margin-top: 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #5a6fd8;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        .response {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 DeepSeek AI Test Sayfası</h1>
+        
+        <div class="test-section">
+            <h3>1. API Key Test</h3>
+            <input type="text" id="apiKeyInput" placeholder="DeepSeek API Key girin (sk-or-v1-...)" value="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">
+            <button onclick="testApiKey()">API Key Test Et</button>
+            <div id="apiKeyStatus"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Basit Mesaj Testi</h3>
+            <input type="text" id="testMessage" placeholder="Test mesajı girin" value="Merhaba, nasılsın?">
+            <button onclick="testSimpleMessage()">Mesaj Gönder</button>
+            <div id="simpleResponse"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Uygulama Ekleme Testi</h3>
+            <input type="text" id="appMessage" placeholder="Uygulama ekleme komutu" value="Canva uygulamasını ekle">
+            <button onclick="testAppCommand()">Uygulama Komutu Test Et</button>
+            <div id="appResponse"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Sistem Bilgileri</h3>
+            <div id="systemInfo"></div>
+        </div>
+    </div>
+
+    <script src="deepseek-ai.js"></script>
+    <script>
+        let deepSeekAI = null;
+
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function showResponse(elementId, response) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="response">${response}</div>`;
+        }
+
+        async function testApiKey() {
+            const apiKey = document.getElementById('apiKeyInput').value.trim();
+            
+            if (!apiKey) {
+                showStatus('apiKeyStatus', '❌ Lütfen API key girin!', 'error');
+                return;
+            }
+
+            showStatus('apiKeyStatus', '🔄 API key test ediliyor...', 'warning');
+
+            try {
+                // Create new instance with the API key
+                deepSeekAI = new DeepSeekAI();
+                deepSeekAI.apiKey = apiKey;
+                
+                // Test the API key
+                const response = await deepSeekAI.sendMessage('test');
+                
+                if (response && !response.includes('AI yanıt veremedi')) {
+                    showStatus('apiKeyStatus', '✅ API key geçerli! DeepSeek AI kullanılabilir.', 'success');
+                } else {
+                    showStatus('apiKeyStatus', '❌ API key geçersiz veya kullanılamıyor.', 'error');
+                }
+            } catch (error) {
+                showStatus('apiKeyStatus', `❌ API key test hatası: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSimpleMessage() {
+            if (!deepSeekAI) {
+                showResponse('simpleResponse', '❌ Önce API key test edin!');
+                return;
+            }
+
+            const message = document.getElementById('testMessage').value.trim();
+            if (!message) {
+                showResponse('simpleResponse', '❌ Lütfen test mesajı girin!');
+                return;
+            }
+
+            try {
+                showResponse('simpleResponse', '🔄 Mesaj gönderiliyor...');
+                const response = await deepSeekAI.sendMessage(message);
+                showResponse('simpleResponse', `✅ Yanıt:\n${response}`);
+            } catch (error) {
+                showResponse('simpleResponse', `❌ Hata: ${error.message}`);
+            }
+        }
+
+        async function testAppCommand() {
+            if (!deepSeekAI) {
+                showResponse('appResponse', '❌ Önce API key test edin!');
+                return;
+            }
+
+            const message = document.getElementById('appMessage').value.trim();
+            if (!message) {
+                showResponse('appResponse', '❌ Lütfen uygulama komutu girin!');
+                return;
+            }
+
+            try {
+                showResponse('appResponse', '🔄 Uygulama komutu işleniyor...');
+                const response = await deepSeekAI.sendMessage(message, {
+                    apps: [
+                        { name: 'Test App', category: 'productivity' }
+                    ]
+                });
+                showResponse('appResponse', `✅ Yanıt:\n${response}`);
+            } catch (error) {
+                showResponse('appResponse', `❌ Hata: ${error.message}`);
+            }
+        }
+
+        function showSystemInfo() {
+            const info = {
+                'User Agent': navigator.userAgent,
+                'Platform': navigator.platform,
+                'Language': navigator.language,
+                'Online': navigator.onLine ? 'Evet' : 'Hayır',
+                'Timestamp': new Date().toLocaleString('tr-TR')
+            };
+
+            let infoHtml = '<div class="response">';
+            for (const [key, value] of Object.entries(info)) {
+                infoHtml += `<strong>${key}:</strong> ${value}\n`;
+            }
+            infoHtml += '</div>';
+
+            document.getElementById('systemInfo').innerHTML = infoHtml;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            showSystemInfo();
+        });
+    </script>
+</body>
+</html>
