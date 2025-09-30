@@ -5,6 +5,8 @@ class AdminPanel {
         this.currentEditingId = null;
         this.scraper = new AppStoreScraper();
         this.api = new AppStoreAPI();
+        this.jsonpApi = new JSONPAppStoreAPI();
+        this.aiAssistant = new AIAssistant();
         this.init();
     }
 
@@ -64,10 +66,38 @@ class AdminPanel {
             this.scrapeAppStore();
         });
 
+        // AI Settings
+        document.getElementById('aiSettingsBtn').addEventListener('click', () => {
+            this.openAISettings();
+        });
+
+        document.getElementById('closeAiSettingsModal').addEventListener('click', () => {
+            this.closeAISettings();
+        });
+
+        document.getElementById('testApiKeyBtn').addEventListener('click', () => {
+            this.testApiKey();
+        });
+
+        document.getElementById('saveAiSettingsBtn').addEventListener('click', () => {
+            this.saveAISettings();
+        });
+
+        // Temperature slider
+        document.getElementById('aiTemperature').addEventListener('input', (e) => {
+            document.getElementById('temperatureValue').textContent = e.target.value;
+        });
+
         // Close modals on outside click
         document.getElementById('appModal').addEventListener('click', (e) => {
             if (e.target.id === 'appModal') {
                 this.closeAppModal();
+            }
+        });
+
+        document.getElementById('aiSettingsModal').addEventListener('click', (e) => {
+            if (e.target.id === 'aiSettingsModal') {
+                this.closeAISettings();
             }
         });
 
@@ -306,8 +336,11 @@ class AdminPanel {
         try {
             let appData;
             
-            if (method === 'api') {
-                // Use iTunes API (faster, more reliable)
+            if (method === 'jsonp') {
+                // Use JSONP API (fastest, no CORS issues)
+                appData = await this.jsonpApi.getAppData(url);
+            } else if (method === 'api') {
+                // Use iTunes API with CORS proxies
                 appData = await this.api.getAppData(url);
             } else {
                 // Use web scraper (more detailed but slower)
@@ -317,7 +350,33 @@ class AdminPanel {
             this.populateFormWithScrapedData(appData);
             this.hideScraperError();
         } catch (error) {
-            this.showScraperError(error.message);
+            // If web scraper fails, suggest alternatives
+            if (method === 'scraper' && error.message.includes('CORS proxy')) {
+                this.showScraperError(`
+                    ${error.message}
+                    
+                    💡 Önerilen çözümler:
+                    • JSONP API yöntemini deneyin (en hızlı)
+                    • iTunes API yöntemini deneyin
+                    • Manuel olarak bilgileri girin
+                `);
+                
+                // Auto-suggest JSONP method
+                this.suggestAlternativeMethod('jsonp');
+            } else if (method === 'api' && error.message.includes('proxy')) {
+                this.showScraperError(`
+                    ${error.message}
+                    
+                    💡 Önerilen çözümler:
+                    • JSONP API yöntemini deneyin (en hızlı)
+                    • Manuel olarak bilgileri girin
+                `);
+                
+                // Auto-suggest JSONP method
+                this.suggestAlternativeMethod('jsonp');
+            } else {
+                this.showScraperError(error.message);
+            }
         }
     }
 
@@ -363,11 +422,146 @@ class AdminPanel {
         errorDiv.textContent = message;
         errorDiv.style.display = 'block';
         errorDiv.style.color = '#38a169';
+        errorDiv.style.background = '#c6f6d5';
+        errorDiv.style.borderLeftColor = '#38a169';
         
         // Hide success message after 3 seconds
         setTimeout(() => {
             errorDiv.style.display = 'none';
         }, 3000);
+    }
+
+    suggestAlternativeMethod(method) {
+        // Add a suggestion button
+        const errorDiv = document.getElementById('scraperError');
+        const suggestionBtn = document.createElement('button');
+        suggestionBtn.textContent = `🔄 ${method.toUpperCase()} yöntemini dene`;
+        suggestionBtn.className = 'btn btn-primary';
+        suggestionBtn.style.marginTop = '10px';
+        suggestionBtn.onclick = () => {
+            // Switch to suggested method
+            const radio = document.querySelector(`input[name="scraperMethod"][value="${method}"]`);
+            if (radio) {
+                radio.checked = true;
+                // Auto-try the new method
+                setTimeout(() => {
+                    this.scrapeAppStore();
+                }, 500);
+            }
+        };
+        
+        // Remove existing suggestion button if any
+        const existingBtn = errorDiv.querySelector('.suggestion-btn');
+        if (existingBtn) {
+            existingBtn.remove();
+        }
+        
+        suggestionBtn.className += ' suggestion-btn';
+        errorDiv.appendChild(suggestionBtn);
+    }
+
+    // AI Settings Methods
+    openAISettings() {
+        const modal = document.getElementById('aiSettingsModal');
+        modal.style.display = 'block';
+        
+        // Load current settings
+        this.loadAISettings();
+    }
+
+    closeAISettings() {
+        const modal = document.getElementById('aiSettingsModal');
+        modal.style.display = 'none';
+    }
+
+    loadAISettings() {
+        // Load current API key (masked)
+        const currentKey = this.aiAssistant.deepSeekAI.apiKey;
+        const maskedKey = currentKey ? currentKey.substring(0, 10) + '...' : '';
+        document.getElementById('apiKeyInput').value = currentKey;
+        
+        // Load current model
+        document.getElementById('aiModelSelect').value = this.aiAssistant.deepSeekAI.model;
+        
+        // Load current temperature
+        document.getElementById('aiTemperature').value = this.aiAssistant.deepSeekAI.temperature;
+        document.getElementById('temperatureValue').textContent = this.aiAssistant.deepSeekAI.temperature;
+        
+        // Load current max tokens
+        document.getElementById('aiMaxTokens').value = this.aiAssistant.deepSeekAI.maxTokens;
+    }
+
+    async testApiKey() {
+        const apiKey = document.getElementById('apiKeyInput').value.trim();
+        const statusDiv = document.getElementById('apiKeyStatus');
+        
+        if (!apiKey) {
+            this.showApiStatus('Lütfen API key girin.', 'error');
+            return;
+        }
+
+        // Show testing status
+        this.showApiStatus('API key test ediliyor...', 'warning');
+        
+        try {
+            // Create temporary DeepSeek AI instance for testing
+            const tempAI = new DeepSeekAI();
+            tempAI.apiKey = apiKey;
+            
+            // Test the API key
+            const response = await tempAI.sendMessage('test');
+            
+            if (response && !response.includes('AI yanıt veremedi')) {
+                this.showApiStatus('✅ API key geçerli! DeepSeek AI kullanılabilir.', 'success');
+            } else {
+                this.showApiStatus('❌ API key geçersiz veya kullanılamıyor.', 'error');
+            }
+        } catch (error) {
+            this.showApiStatus(`❌ API key test hatası: ${error.message}`, 'error');
+        }
+    }
+
+    saveAISettings() {
+        const apiKey = document.getElementById('apiKeyInput').value.trim();
+        const model = document.getElementById('aiModelSelect').value;
+        const temperature = parseFloat(document.getElementById('aiTemperature').value);
+        const maxTokens = parseInt(document.getElementById('aiMaxTokens').value);
+
+        if (!apiKey) {
+            this.showApiStatus('Lütfen API key girin.', 'error');
+            return;
+        }
+
+        // Update AI assistant settings
+        this.aiAssistant.deepSeekAI.apiKey = apiKey;
+        this.aiAssistant.deepSeekAI.model = model;
+        this.aiAssistant.deepSeekAI.temperature = temperature;
+        this.aiAssistant.deepSeekAI.maxTokens = maxTokens;
+        
+        // Re-validate API key
+        this.aiAssistant.deepSeekAI.isValid = false;
+        this.aiAssistant.deepSeekAI.validateApiKey();
+
+        // Save to localStorage
+        localStorage.setItem('aiSettings', JSON.stringify({
+            apiKey: apiKey,
+            model: model,
+            temperature: temperature,
+            maxTokens: maxTokens
+        }));
+
+        this.showApiStatus('✅ AI ayarları kaydedildi!', 'success');
+        
+        // Close modal after a short delay
+        setTimeout(() => {
+            this.closeAISettings();
+        }, 1500);
+    }
+
+    showApiStatus(message, type) {
+        const statusDiv = document.getElementById('apiKeyStatus');
+        statusDiv.textContent = message;
+        statusDiv.className = `api-status ${type}`;
     }
 }
 

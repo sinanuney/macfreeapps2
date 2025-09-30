@@ -3,10 +3,14 @@ class AppStoreScraper {
     constructor() {
         // Multiple CORS proxies for better reliability
         this.corsProxies = [
-            'https://cors-anywhere.herokuapp.com/',
             'https://api.allorigins.win/raw?url=',
             'https://corsproxy.io/?',
-            'https://thingproxy.freeboard.io/fetch/'
+            'https://thingproxy.freeboard.io/fetch/',
+            'https://cors-anywhere.herokuapp.com/',
+            'https://api.codetabs.com/v1/proxy?quest=',
+            'https://cors.bridged.cc/',
+            'https://proxy.cors.sh/',
+            'https://cors.eu.org/'
         ];
         this.currentProxyIndex = 0;
     }
@@ -51,8 +55,17 @@ class AppStoreScraper {
                 }
             }
 
-            // If all proxies failed, try a different approach
-            throw new Error('Tüm CORS proxy\'leri başarısız oldu. Lütfen daha sonra tekrar deneyin.');
+            // If all proxies failed, provide helpful error message
+            const errorMessage = `Tüm CORS proxy'leri başarısız oldu. 
+            
+Çözüm önerileri:
+1. JSONP API yöntemini kullanın (daha hızlı ve güvenilir)
+2. iTunes API yöntemini deneyin
+3. Daha sonra tekrar deneyin
+
+Son hata: ${lastError ? lastError.message : 'Bilinmeyen hata'}`;
+            
+            throw new Error(errorMessage);
 
         } catch (error) {
             this.showLoading(false);

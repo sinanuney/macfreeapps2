@@ -1,80 +1,69 @@
-// Alternative App Store Data Fetcher using iTunes Search API
-class AppStoreAPI {
+// JSONP-based iTunes API fetcher to bypass CORS
+class JSONPAppStoreAPI {
     constructor() {
-        this.baseUrl = 'https://itunes.apple.com/lookup';
-        // CORS proxies for iTunes API
-        this.corsProxies = [
-            'https://api.allorigins.win/raw?url=',
-            'https://corsproxy.io/?',
-            'https://thingproxy.freeboard.io/fetch/',
-            'https://cors-anywhere.herokuapp.com/'
-        ];
+        this.callbacks = new Map();
+        this.callbackCounter = 0;
     }
 
     async getAppData(appStoreUrl) {
-        try {
-            // Extract app ID from URL
-            const appId = this.extractAppId(appStoreUrl);
-            if (!appId) {
-                throw new Error('App Store URL\'sinden uygulama ID\'si çıkarılamadı');
-            }
-
-            // Try multiple CORS proxies
-            const apiUrl = `${this.baseUrl}?id=${appId}&country=tr&lang=tr`;
-            let lastError = null;
-
-            for (let i = 0; i < this.corsProxies.length; i++) {
-                try {
-                    const proxyUrl = this.corsProxies[i] + encodeURIComponent(apiUrl);
-                    const response = await fetch(proxyUrl, {
-                        method: 'GET',
-                        headers: {
-                            'Accept': 'application/json',
-                            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-                        }
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    if (!data.results || data.results.length === 0) {
-                        throw new Error('Uygulama bulunamadı');
-                    }
-
-                    const app = data.results[0];
-                    return this.formatAppData(app, appStoreUrl);
-
-                } catch (error) {
-                    lastError = error;
-                    console.log(`iTunes API Proxy ${i + 1} failed:`, error.message);
-                    continue;
-                }
-            }
-
-            // If all proxies failed, try direct fetch as last resort
+        return new Promise((resolve, reject) => {
             try {
-                const response = await fetch(apiUrl);
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
+                const appId = this.extractAppId(appStoreUrl);
+                if (!appId) {
+                    reject(new Error('App Store URL\'sinden uygulama ID\'si çıkarılamadı'));
+                    return;
                 }
 
-                const data = await response.json();
-                if (!data.results || data.results.length === 0) {
-                    throw new Error('Uygulama bulunamadı');
-                }
+                // Create unique callback function
+                const callbackName = `jsonp_callback_${++this.callbackCounter}`;
+                const callback = (data) => {
+                    this.cleanup(callbackName);
+                    if (!data.results || data.results.length === 0) {
+                        reject(new Error('Uygulama bulunamadı'));
+                        return;
+                    }
+                    const app = data.results[0];
+                    resolve(this.formatAppData(app, appStoreUrl));
+                };
 
-                const app = data.results[0];
-                return this.formatAppData(app, appStoreUrl);
+                // Store callback
+                this.callbacks.set(callbackName, callback);
+                window[callbackName] = callback;
 
-            } catch (directError) {
-                throw new Error(`Tüm proxy\'ler başarısız oldu. Son hata: ${lastError.message}`);
+                // Create script tag for JSONP
+                const script = document.createElement('script');
+                script.src = `https://itunes.apple.com/lookup?id=${appId}&country=tr&lang=tr&callback=${callbackName}`;
+                script.onerror = () => {
+                    this.cleanup(callbackName);
+                    reject(new Error('iTunes API\'sine erişilemedi'));
+                };
+
+                // Set timeout
+                setTimeout(() => {
+                    this.cleanup(callbackName);
+                    reject(new Error('API zaman aşımı'));
+                }, 10000);
+
+                document.head.appendChild(script);
+
+            } catch (error) {
+                reject(new Error(`API Hatası: ${error.message}`));
             }
+        });
+    }
 
-        } catch (error) {
-            throw new Error(`API Hatası: ${error.message}`);
+    cleanup(callbackName) {
+        // Remove callback
+        if (this.callbacks.has(callbackName)) {
+            this.callbacks.delete(callbackName);
         }
+        if (window[callbackName]) {
+            delete window[callbackName];
+        }
+
+        // Remove script tag
+        const scripts = document.querySelectorAll(`script[src*="callback=${callbackName}"]`);
+        scripts.forEach(script => script.remove());
     }
 
     extractAppId(url) {
@@ -104,10 +93,9 @@ class AppStoreAPI {
     }
 
     cleanDescription(description) {
-        // Clean and truncate description
         return description
-            .replace(/<[^>]*>/g, '') // Remove HTML tags
-            .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+            .replace(/<[^>]*>/g, '')
+            .replace(/\s+/g, ' ')
             .trim()
             .substring(0, 200) + '...';
     }
@@ -137,9 +125,6 @@ class AppStoreAPI {
         }
         if (app.fileSizeBytes) {
             requirements.push(`En az ${this.formatFileSize(app.fileSizeBytes)} boş alan`);
-        }
-        if (app.supportedDevices) {
-            requirements.push(`Desteklenen cihazlar: ${app.supportedDevices.join(', ')}`);
         }
         return requirements;
     }
@@ -202,7 +187,6 @@ class AppStoreAPI {
             'security': '🔒'
         };
 
-        // Check for specific app names
         const nameEmojis = {
             'canva': '🎨',
             'davinci': '🎬',
@@ -238,4 +222,4 @@ class AppStoreAPI {
 }
 
 // Make it globally available
-window.AppStoreAPI = AppStoreAPI;
+window.JSONPAppStoreAPI = JSONPAppStoreAPI;

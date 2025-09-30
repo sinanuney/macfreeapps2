@@ -8,7 +8,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="appstore-api.js"></script>
+    <script src="jsonp-api.js"></script>
     <script src="appstore-scraper.js"></script>
+    <script src="deepseek-ai.js"></script>
+    <script src="ai-assistant.js"></script>
 </head>
 <body>
     <!-- Login Screen -->
@@ -38,6 +41,12 @@
             <div class="admin-nav">
                 <h1><i class="fas fa-cog"></i> Admin Panel</h1>
                 <div class="admin-actions">
+                    <button id="aiToggleBtn" class="btn btn-ai">
+                        <i class="fas fa-robot"></i> AI Aç
+                    </button>
+                    <button id="aiSettingsBtn" class="btn btn-secondary">
+                        <i class="fas fa-cog"></i> AI Ayarları
+                    </button>
                     <button id="addAppBtn" class="btn btn-primary">
                         <i class="fas fa-plus"></i> Yeni Uygulama
                     </button>
@@ -82,6 +91,69 @@
                 </div>
             </div>
         </main>
+
+        <!-- AI Assistant Panel -->
+        <div id="aiPanel" class="ai-panel" style="display: none;">
+            <div class="ai-header">
+                <h3><i class="fas fa-robot"></i> AI Asistan</h3>
+                <button id="aiClearBtn" class="btn btn-small btn-secondary">
+                    <i class="fas fa-trash"></i> Temizle
+                </button>
+            </div>
+            <div id="aiChatContainer" class="ai-chat-container">
+                <!-- AI messages will appear here -->
+            </div>
+            <div class="ai-input-container">
+                <input type="text" id="aiInput" placeholder="AI'ya ne yapmak istediğinizi söyleyin... (örn: 'Canva uygulamasını ekle')">
+                <button id="aiSendBtn" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- AI Settings Modal -->
+        <div id="aiSettingsModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i class="fas fa-cog"></i> AI Ayarları</h2>
+                    <button id="closeAiSettingsModal" class="close-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="apiKeyInput">DeepSeek API Key</label>
+                        <input type="password" id="apiKeyInput" placeholder="sk-or-v1-...">
+                        <small>API key'inizi buraya girin. Geçerli bir key olmadığında basit kural tabanlı yanıtlar kullanılır.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="aiModelSelect">AI Modeli</label>
+                        <select id="aiModelSelect">
+                            <option value="deepseek-chat">DeepSeek Chat</option>
+                            <option value="deepseek-coder">DeepSeek Coder</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="aiTemperature">Yaratıcılık (Temperature)</label>
+                        <input type="range" id="aiTemperature" min="0" max="1" step="0.1" value="0.7">
+                        <span id="temperatureValue">0.7</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="aiMaxTokens">Maksimum Token</label>
+                        <input type="number" id="aiMaxTokens" min="100" max="2000" value="1000">
+                    </div>
+                    <div class="form-actions">
+                        <button id="testApiKeyBtn" class="btn btn-secondary">
+                            <i class="fas fa-test-tube"></i> API Key Test Et
+                        </button>
+                        <button id="saveAiSettingsBtn" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Kaydet
+                        </button>
+                    </div>
+                    <div id="apiKeyStatus" class="api-status"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Add/Edit App Modal -->
@@ -105,7 +177,10 @@
                     </div>
                     <div class="scraper-options">
                         <label>
-                            <input type="radio" name="scraperMethod" value="api" checked> iTunes API (Hızlı)
+                            <input type="radio" name="scraperMethod" value="jsonp" checked> JSONP API (En Hızlı)
+                        </label>
+                        <label>
+                            <input type="radio" name="scraperMethod" value="api"> iTunes API (Hızlı)
                         </label>
                         <label>
                             <input type="radio" name="scraperMethod" value="scraper"> Web Scraper (Detaylı)

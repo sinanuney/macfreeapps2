@@ -107,6 +107,7 @@
         }
     </style>
     <script src="appstore-api.js"></script>
+    <script src="jsonp-api.js"></script>
     <script src="appstore-scraper.js"></script>
 </head>
 <body>
@@ -129,6 +130,9 @@
             <div class="input-group">
                 <input type="url" id="testUrl" placeholder="https://apps.apple.com/tr/app/uygulama-adi/id123456789" 
                        value="https://apps.apple.com/tr/app/canva-foto-video-d%C3%BCzenleyici/id897446215?l=tr">
+                <button class="btn" onclick="testJSONP()">
+                    <i class="fas fa-download"></i> JSONP API Test
+                </button>
                 <button class="btn" onclick="testAPI()">
                     <i class="fas fa-download"></i> iTunes API Test
                 </button>
@@ -154,6 +158,31 @@
     <script>
         const scraper = new AppStoreScraper();
         const api = new AppStoreAPI();
+        const jsonpApi = new JSONPAppStoreAPI();
+
+        async function testJSONP() {
+            const url = document.getElementById('testUrl').value.trim();
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const success = document.getElementById('success');
+            const result = document.getElementById('result');
+            const appData = document.getElementById('appData');
+
+            // Reset UI
+            error.style.display = 'none';
+            success.style.display = 'none';
+            result.style.display = 'none';
+            loading.style.display = 'block';
+
+            try {
+                const data = await jsonpApi.getAppData(url);
+                displayData(data, appData, loading, success, result);
+            } catch (err) {
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                error.textContent = 'JSONP API Hatası: ' + err.message;
+            }
+        }
 
         async function testAPI() {
             const url = document.getElementById('testUrl').value.trim();
@@ -199,7 +228,14 @@
             } catch (err) {
                 loading.style.display = 'none';
                 error.style.display = 'block';
-                error.textContent = 'Web Scraper Hatası: ' + err.message;
+                error.innerHTML = `
+                    <strong>Web Scraper Hatası:</strong><br>
+                    ${err.message}<br><br>
+                    <strong>💡 Önerilen çözümler:</strong><br>
+                    • JSONP API yöntemini deneyin (en hızlı)<br>
+                    • iTunes API yöntemini deneyin<br>
+                    • Manuel olarak bilgileri girin
+                `;
             }
         }
 
@@ -265,7 +301,7 @@
         // Test with Canva on page load
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
-                testAPI();
+                testJSONP();
             }, 1000);
         });
     </script>
